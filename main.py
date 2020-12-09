@@ -1,12 +1,12 @@
 from PIL import Image, ImageDraw, ImageFilter
 import random
-
+import copy
 import fit
 
 test_image = "Mona_Lisa_head.png"
 # test_image = "2x2dot.png"
 
-Population_size = 10
+Population_size = 50
 
 class Polygon:
     def __init__(self, poly, color, size):
@@ -63,9 +63,9 @@ class Canvas:
         self.population = population
         self.shape = image_shape
 
-    # def __repr__(self):
-    #     return "\ncordinates :  % s, " \
-    #           "Color is % s\n" % (self.poly, self.color)
+    def __repr__(self):
+        return "\n Population  :  % s, " \
+              "Image Shape is % s\n" % (self.population, self.shape)
 
     def draw_image(self, count, save = False, display = False):
         img = Image.new('RGB', self.shape, (0, 0, 0, 255))
@@ -78,24 +78,26 @@ class Canvas:
             draw_polygon.polygon(poly, fill = color, outline = color)
             img.paste(draw, mask = draw)
 
-        if save == True:
-            path = "generation_result/Gen_" + str(count) + ".png"
-            img = img.filter(ImageFilter.GaussianBlur(radius=3))
-            img.save(path)
 
         if display == True:
             img.show()
 
+        if save == True:
+            path = "generation_result/Gen_" + str(count) + ".png"
+            img = img.filter(ImageFilter.GaussianBlur(radius=1))
+            img.save(path)
+
+
+
         return img
 
     def mutation(self):
-        print("before : ", self.population)
-        pop_idx = random.randrange(0, len(self.population))
-        selected_polygon  = self.population[pop_idx]
-        result = selected_polygon.mutate()
-        print("result : ", result)
-        print("after : ", self.population)
-        return self.population
+        new_population =copy.deepcopy(self.population)
+        pop_idx = random.randrange(0, len(new_population))
+        selected_polygon  = new_population[pop_idx]
+        selected_polygon.mutate()
+
+        return Canvas(new_population, self.shape)
 
 
 def init_population(pop_size, image_shape):
@@ -116,18 +118,33 @@ def main():
     count = 0
     population = init_population(Population_size, image_shape)
     Parent = Canvas(population, image_shape)
-
-    Parent_image = Parent.draw_image(count, save = True)
+    # print("parent : ", Parent)
+    Parent_image = Parent.draw_image(count, save = True, display = False)
     # print("parent image : ", Parent_image)
     # print("reference image : ", Ref_img)
     Parent_fitness = fit.get_fitness(Parent_image, Ref_img, image_shape)
 
+
     while True:
+        count += 1
         Child = Parent.mutation()
+        # print("child : ", Child)
+        Child_image = Child.draw_image(count, display = False)
+        Child_fitness = fit.get_fitness(Child_image, Ref_img, image_shape)
 
 
-        break
+        if Child_fitness < Parent_fitness:
+            print("parent fitness : ", Parent_fitness)
+            print("Child fitness : ", Child_fitness)
+            Parent = Child
+            Parent_image = Child_image
+            Parent_fitness = Child_fitness
+            print("New parent has been updated with best fitness of : ", Child_fitness)
 
+        if count % 100 == 0:
+            print("Saving Generation : ", count)
+            Parent.draw_image(count, save = True, display = False)
+        # break
 
 if __name__ == '__main__':
     main()

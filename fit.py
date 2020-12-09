@@ -17,5 +17,5 @@ def get_fitness(img_1, img_2, img_size):
             # add the pixel fitness to the total fitness (lower is better)
             fitness += pixel_fitness
 
-    print("fitness : ", fitness )
+    # print("fitness : ", fitness )
     return fitness
